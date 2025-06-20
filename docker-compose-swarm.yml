@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  mdns-relay:
+    build: .
+    image: engeloded/mdns-relay:latest
+    container_name: mdns-relay
+    restart: unless-stopped
+
+    # Network configuration - CRITICAL for mDNS
+    network_mode: host
+
+    # Required capabilities for multicast socket operations
+    cap_add:
+      - NET_RAW
+    cap_drop:
+      - ALL
+
+    # Security settings
+    read_only: true
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+
+    # Mount configuration file
+    volumes:
+      - /etc/mdns-relay.toml:/etc/mdns-relay.toml:ro
+      - /etc/localtime:/etc/localtime:ro
+
+    # Environment variables for logging
+    environment:
+      - RUST_LOG=info
+      - RUST_BACKTRACE=1
+
+    # Resource limits to prevent runaway processes
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 32M
+          cpus: '0.1'
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "pgrep", "mdns-relay"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Labels for monitoring/management
+    labels:
+      - "com.docker.compose.project=homelab"
+      - "service.name=mdns-relay"
+      - "service.version=1.0.0"

@@ -1,0 +1,51 @@
+[Unit]
+Description=mDNS Relay Daemon
+Documentation=https://github.com/engeloded/mdns-relay-rs
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=exec
+ExecStart=/usr/local/bin/mdns-relay
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=10
+TimeoutStopSec=10
+
+# Security settings
+AmbientCapabilities=CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_RAW
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+NoNewPrivileges=true
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
+
+# Resource limits
+MemoryHigh=64M
+MemoryMax=128M
+TasksMax=50
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mdns-relay
+
+# Configuration file access
+ReadOnlyPaths=/etc/mdns-relay.toml
+ConfigurationDirectory=mdns-relay
+ConfigurationDirectoryMode=0755
+
+[Install]
+WantedBy=multi-user.target

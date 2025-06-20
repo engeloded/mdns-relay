@@ -1,0 +1,39 @@
+[package]
+name = "mdns-relay"
+version = "0.1.0"
+edition = "2021"
+authors = ["Engel Oded"]
+description = "A lightweight, high-performance mDNS relay for IPv4/IPv6 across network segments"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/engeloded/mdns-relay-rs"
+readme = "README.md"
+keywords = ["mdns", "multicast", "network", "relay", "homekit", "matter"]
+categories = ["network-programming", "command-line-utilities"]
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.0", features = ["derive"] }
+dashmap = "5.5"
+get_if_addrs = "0.5"
+libc = "0.2"
+mio = { version = "0.8", features = ["net", "os-poll"] }
+nix = { version = "0.27", features = ["user"] }
+serde = { version = "1.0", features = ["derive"] }
+signal-hook = "0.3"
+socket2 = { version = "0.5", features = ["all"] }
+thiserror = "1.0"
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "time"] }
+
+[dev-dependencies]
+tempfile = "3.8"
+tokio = { version = "1.0", features = ["macros", "rt"] }
+
+[[bin]]
+name = "mdns-relay"
+path = "src/main.rs"
+
+[lib]
+name = "mdns_relay"
+path = "src/lib.rs"

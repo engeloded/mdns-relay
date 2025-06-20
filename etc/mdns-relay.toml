@@ -1,0 +1,185 @@
+# mDNS Relay Configuration
+# This file configures which network interfaces should relay mDNS traffic between each other
+
+# ============================================================================
+# CACHE SETTINGS
+# ============================================================================
+
+# Cache TTL in seconds - how long to remember packets to prevent loops
+# Default: 10 seconds
+# Range: 1-3600 seconds
+ttl = 10
+
+# Maximum cache entries for duplicate detection
+# Default: 1000 entries
+# Higher values use more memory but can handle more simultaneous devices
+cache_size = 1000
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+
+# Log level - controls verbosity of output
+# Options: "error", "warn", "info", "debug", "trace"
+# Default: "info"
+# - error: Only critical errors
+# - warn: Warnings and errors
+# - info: General information, warnings, and errors (recommended)
+# - debug: Detailed debugging information
+# - trace: Very verbose debugging (high performance impact)
+log_level = "info"
+
+# Log format - output format for logs
+# Options: "pretty", "json"
+# Default: "pretty"
+# - pretty: Human-readable colored output for console/terminal
+# - json: Structured JSON format for log aggregation systems (ELK, Grafana Loki)
+log_format = "pretty"
+
+# ============================================================================
+# PERFORMANCE TUNING
+# ============================================================================
+
+# Packet buffer size in bytes
+# Default: 2048 bytes
+# Range: 64-65536 bytes
+# Larger values can handle bigger packets but use more memory
+buffer_size = 2048
+
+# Maximum events processed per poll cycle
+# Default: 64 events
+# Higher values can improve throughput but may increase latency
+max_events = 64
+
+# Loop detection window in milliseconds
+# Default: 200ms
+# How long to remember packets for duplicate detection
+# Shorter values reduce memory usage but may allow loops
+loop_detection_ms = 200
+
+# Statistics reporting interval in seconds
+# Default: 300 seconds (5 minutes)
+# How often to log performance statistics
+stats_interval_seconds = 300
+
+# Cache cleanup interval in seconds
+# Default: 30 seconds
+# How often to clean expired entries from cache
+cleanup_interval_seconds = 30
+
+# Maximum packet size to process in bytes
+# Default: 9000 bytes (supports jumbo frames)
+# Range: 64-65536 bytes
+max_packet_size = 9000
+
+# ============================================================================
+# INTERFACE FORWARDING CONFIGURATION
+# ============================================================================
+
+# Interface pairs - each [[interface]] section defines src -> dst forwarding
+# For bidirectional relay, you need two entries: src->dst and dst->src
+# This is the most common configuration pattern
+
+# Example 1: Bridge ethernet and WiFi (most common use case)
+# This enables HomeKit, Matter, AirPlay, and Chromecast between wired and wireless devices
+
+[[interface]]
+src = "eth0"           # Source interface (where packets are received)
+dst = "wlan0"          # Destination interface (where packets are forwarded)
+stack = "dual"         # IP stack: "ipv4", "ipv6", or "dual" (default: "dual")
+
+[[interface]]
+src = "wlan0"          # Reverse direction for bidirectional relay
+dst = "eth0"
+stack = "dual"
+
+# Example 2: Bridge multiple VLANs or network segments
+# Useful for enterprise networks with segregated VLANs
+
+[[interface]]
+src = "eth0"
+dst = "eth0.100"       # VLAN interface
+stack = "ipv4"         # IPv4 only for legacy devices
+
+[[interface]]
+src = "eth0.100"
+dst = "eth0"
+stack = "ipv4"
+
+# Example 3: Home lab with multiple networks
+# Bridge LAN and guest networks for selective device sharing
+
+[[interface]]
+src = "br-lan"         # LAN bridge
+dst = "br-guest"       # Guest network bridge
+stack = "dual"
+
+[[interface]]
+src = "br-guest"
+dst = "br-lan"
+stack = "dual"
+
+# Example 4: Docker networks (if running in host network mode)
+# Enable Docker containers to discover host services and vice versa
+
+[[interface]]
+src = "docker0"
+dst = "eth0"
+stack = "ipv4"
+
+[[interface]]
+src = "eth0"
+dst = "docker0"
+stack = "ipv4"
+
+# Example 5: Proxmox virtual bridges
+# Enable mDNS between VMs, containers, and physical network
+
+[[interface]]
+src = "vmbr0"          # Proxmox bridge for VMs
+dst = "eth0"           # Physical interface
+stack = "dual"
+
+[[interface]]
+src = "eth0"
+dst = "vmbr0"
+stack = "dual"
+
+# ============================================================================
+# CONFIGURATION NOTES
+# ============================================================================
+
+# Stack Mode Options:
+# Default: "dual"
+# - "ipv4": IPv4 only - use for legacy devices or networks without IPv6
+# - "ipv6": IPv6 only - use for IPv6-only networks (rare)
+# - "dual": Both IPv4 and IPv6 - recommended for HomeKit, Matter, and modern devices
+
+# Best Practices:
+# 1. For HomeKit, Matter, AirPlay, Chromecast: use stack = "dual" for full compatibility
+# 2. Each src->dst pair creates a unidirectional relay
+# 3. For bidirectional relay (most common), create both src->dst and dst->src pairs
+# 4. Interface names must exist on the system (check with 'ip link show' or 'ifconfig')
+# 5. IPv6 requires link-local addresses on interfaces
+# 6. The relay automatically joins mDNS multicast groups (224.0.0.251 and ff02::fb)
+
+# Interface Discovery:
+# To see available interfaces on your system:
+# - Linux: ip link show
+# - macOS: ifconfig -a
+# - FreeBSD: ifconfig -a
+
+# Common Interface Names:
+# - Physical Ethernet: eth0, ens18, enp0s3
+# - Wi-Fi: wlan0, wlp3s0, en0 (macOS)
+# - Docker: docker0, br-*
+# - Proxmox: vmbr0, vmbr1
+# - OpenWrt/LEDE: br-lan, br-guest
+# - VLANs: eth0.100, ens18.200
+
+# Testing Your Configuration:
+# 1. Start the relay with debug logging: log_level = "debug"
+# 2. Check for "joined multicast group" messages in logs
+# 3. Use 'avahi-browse -a' or 'dns-sd -B _services._dns-sd._udp' to test
+# 4. Monitor packet forwarding in logs
+# 5. Test actual services (AirPlay, HomeKit, etc.)
